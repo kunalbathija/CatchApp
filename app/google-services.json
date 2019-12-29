@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "655667754562",
+    "firebase_url": "https://catchapp-af544.firebaseio.com",
+    "project_id": "catchapp-af544",
+    "storage_bucket": "catchapp-af544.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:655667754562:android:051ed4d86d0be9bf475fdb",
+        "android_client_info": {
+          "package_name": "com.kunal.catchapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "655667754562-kiakaaakdoftedp4da74f6f7uhtpqqan.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kunal.catchapp",
+            "certificate_hash": "e06b4bd71341d9a014cb388d9c48f341d097465c"
+          }
+        },
+        {
+          "client_id": "655667754562-bqrnji9bbhe4u2b8srruukqjelhurgaa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQ--aoByhX1JEqdbpO1OXU3ZhCgJx_4XA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "655667754562-bqrnji9bbhe4u2b8srruukqjelhurgaa.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
