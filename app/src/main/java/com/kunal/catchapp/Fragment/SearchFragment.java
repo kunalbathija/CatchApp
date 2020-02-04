@@ -25,6 +25,8 @@ import com.kunal.catchapp.Model.User;
 import com.kunal.catchapp.R;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class SearchFragment extends Fragment {
@@ -111,7 +113,6 @@ public class SearchFragment extends Fragment {
                         userList.add(user);
 
                     }
-
                     userAdapter.notifyDataSetChanged();
                 }
             }

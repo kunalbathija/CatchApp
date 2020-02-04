@@ -36,7 +36,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ImageViewHolde
 
     private Context mContext;
     private List<User> mUsers;
-    private boolean isFragment;
+    private boolean isFragment; //jump activity<->fragment error (iss se solve ho gaya)
 
     private FirebaseUser firebaseUser;
 

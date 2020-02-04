@@ -120,6 +120,7 @@ public class PostActivity extends AppCompatActivity {
                         progressDialog.dismiss();
 
                         startActivity(new Intent(PostActivity.this, MainActivity.class));
+                        Toast.makeText(PostActivity.this, "Uploaded", Toast.LENGTH_SHORT).show();
                         finish();
                     }else{
                         Toast.makeText(PostActivity.this, "Failed!", Toast.LENGTH_SHORT).show();

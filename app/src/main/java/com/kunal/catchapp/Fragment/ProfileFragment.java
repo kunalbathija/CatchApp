@@ -1,17 +1,23 @@
 package com.kunal.catchapp.Fragment;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
@@ -21,9 +27,19 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.kunal.catchapp.Adapter.MyFotoAdapter;
+import com.kunal.catchapp.EditProfileActivity;
+import com.kunal.catchapp.FollowersActivity;
 import com.kunal.catchapp.Model.Post;
 import com.kunal.catchapp.Model.User;
+import com.kunal.catchapp.OptionsActivity;
 import com.kunal.catchapp.R;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 
 public class ProfileFragment extends Fragment {
@@ -32,15 +48,27 @@ public class ProfileFragment extends Fragment {
     TextView posts, followers, following, fullname, bio, username;
     Button edit_profile;
 
+    private List<String> mySaves;
+
+    RecyclerView recyclerView_saves;
+    MyFotoAdapter myFotoAdapter_saves;
+    List<Post> postList_saves;
+
+    RecyclerView recyclerView;
+    MyFotoAdapter myFotoAdapter;
+    List<Post> postList;
+
     FirebaseUser firebaseUser;
     String profileid;
 
     ImageButton my_fotos, saved_fotos;
 
+    ProgressBar progressBar;
+
 
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
@@ -61,9 +89,34 @@ public class ProfileFragment extends Fragment {
         my_fotos = view.findViewById(R.id.my_fotos);
         saved_fotos = view.findViewById(R.id.saved_fotos);
 
+        progressBar = view.findViewById(R.id.progress_circular);
+
+        recyclerView = view.findViewById(R.id.recycler_view);
+        recyclerView.setHasFixedSize(true);
+        LinearLayoutManager linearLayoutManager = new GridLayoutManager(getContext(),3);
+        recyclerView.setLayoutManager(linearLayoutManager);
+        postList = new ArrayList<>();
+        myFotoAdapter = new MyFotoAdapter(getContext(),postList);
+        recyclerView.setAdapter(myFotoAdapter);
+
+
+        recyclerView_saves = view.findViewById(R.id.recycler_view_save);
+        recyclerView_saves.setHasFixedSize(true);
+        LinearLayoutManager linearLayoutManager_saves = new GridLayoutManager(getContext(),3);
+        recyclerView_saves.setLayoutManager(linearLayoutManager_saves);
+        postList_saves = new ArrayList<>();
+        myFotoAdapter_saves = new MyFotoAdapter(getContext(),postList_saves);
+        recyclerView_saves.setAdapter(myFotoAdapter_saves);
+
+        recyclerView.setVisibility(View.VISIBLE);
+        recyclerView_saves.setVisibility(View.GONE);
+
+
         userInfo();
         getFollowers();
         getNrPosts();
+        myFotos();
+        mysaves();
 
         if(profileid.equals(firebaseUser.getUid())){
             edit_profile.setText("Edit Profile");
@@ -78,12 +131,14 @@ public class ProfileFragment extends Fragment {
                 String btn = edit_profile.getText().toString();
 
                 if(btn.equals("Edit Profile")){
-                    //go to edit profile
+                    startActivity(new Intent(getContext(), EditProfileActivity.class));
                 }else if(btn.equals("follow")){
                     FirebaseDatabase.getInstance().getReference().child("Follow").child(firebaseUser.getUid())
                             .child("following").child(profileid).setValue(true);
                     FirebaseDatabase.getInstance().getReference().child("Follow").child(profileid)
                             .child("followers").child(firebaseUser.getUid()).setValue(true);
+
+                    addNotifications();
                 }else if(btn.equals("following")){
                     FirebaseDatabase.getInstance().getReference().child("Follow").child(firebaseUser.getUid())
                             .child("following").child(profileid).removeValue();
@@ -93,10 +148,132 @@ public class ProfileFragment extends Fragment {
             }
         });
 
+        options.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getContext(), OptionsActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
+        my_fotos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recyclerView.setVisibility(View.VISIBLE);
+                recyclerView_saves.setVisibility(View.GONE);
+            }
+        });
+
+        saved_fotos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recyclerView.setVisibility(View.GONE);
+                recyclerView_saves.setVisibility(View.VISIBLE);
+            }
+        });
+
+        followers.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Intent intent = new Intent(getContext(), FollowersActivity.class);
+                intent.putExtra("id",profileid);
+                intent.putExtra("title","Followers");
+                startActivity(intent);
+
+                /*if(profileid==firebaseUser.getUid()){
+                    Intent intent = new Intent(getContext(), FollowersActivity.class);
+                    intent.putExtra("id",profileid);
+                    intent.putExtra("title","Followers");
+                    startActivity(intent);
+                }
+                else{
+                    DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
+                            .child("Follow").child(firebaseUser.getUid()).child("following");
+                    reference.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            if(dataSnapshot.child(profileid).exists()){
+                                Intent intent = new Intent(getContext(), FollowersActivity.class);
+                                intent.putExtra("id",profileid);
+                                intent.putExtra("title","Followers");
+                                startActivity(intent);
+                            }else{
+                                Toast.makeText(getActivity(), "Follow toh kar pahele", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+                }*/
+
+            }
+        });
+
+        following.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Intent intent = new Intent(getContext(), FollowersActivity.class);
+                intent.putExtra("id",profileid);
+                intent.putExtra("title","Following");
+                startActivity(intent);
+
+                /*if(profileid==firebaseUser.getUid()){
+                    Intent intent = new Intent(getContext(), FollowersActivity.class);
+                    intent.putExtra("id",profileid);
+                    intent.putExtra("title","Following");
+                    startActivity(intent);
+                }
+                else{
+                    DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
+                            .child("Follow").child(firebaseUser.getUid()).child("following");
+                    reference.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            if(dataSnapshot.child(profileid).exists()){
+                                Intent intent = new Intent(getContext(), FollowersActivity.class);
+                                intent.putExtra("id",profileid);
+                                intent.putExtra("title","Following");
+                                startActivity(intent);
+                            }else{
+                                Toast.makeText(getActivity(), "Follow toh kar pahele", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+                }*/
+            }
+        });
+
 
         return view;
 
     }
+
+    private void addNotifications(){
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Notifications").child(profileid);
+
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("userid",firebaseUser.getUid());
+        hashMap.put("text","Started following you");
+        hashMap.put("postid","");
+        hashMap.put("ispost",false);
+
+        reference.push().setValue(hashMap);
+
+    }
+
 
     private void userInfo(){
         DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Users").child(profileid);
@@ -185,6 +362,147 @@ public class ProfileFragment extends Fragment {
                     }
                 }
                 posts.setText(""+i);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private void myFotos(){
+
+        /*DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Posts");
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                postList.clear();
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                    Post post = snapshot.getValue(Post.class);
+                    if(post.getPublisher().equals(profileid)){
+                        postList.add(post);
+                    }
+                }
+                Collections.reverse(postList);
+                myFotoAdapter.notifyDataSetChanged();
+                progressBar.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });*/
+
+
+
+        if(profileid.equals(firebaseUser.getUid())){
+            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Posts");
+            reference.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    postList.clear();
+                    for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                        Post post = snapshot.getValue(Post.class);
+                        if(post.getPublisher().equals(profileid)){
+                            postList.add(post);
+                        }
+                    }
+                    Collections.reverse(postList);
+                    myFotoAdapter.notifyDataSetChanged();
+                    progressBar.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
+        }else{
+
+            DatabaseReference reference = FirebaseDatabase.getInstance().getReference()
+                    .child("Follow").child(firebaseUser.getUid()).child("following");
+            reference.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if(dataSnapshot.child(profileid).exists()){
+                        DatabaseReference reference1 = FirebaseDatabase.getInstance().getReference("Posts");
+                        reference1.addValueEventListener(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                postList.clear();
+                                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                                    Post post = snapshot.getValue(Post.class);
+                                    if(post.getPublisher().equals(profileid)){
+                                        postList.add(post);
+                                    }
+                                }
+                                Collections.reverse(postList);
+                                myFotoAdapter.notifyDataSetChanged();
+                                progressBar.setVisibility(View.GONE);
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });
+                    }else{
+                        postList.clear();
+                        Toast.makeText(getActivity(), "Follow to view!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
+
+        }
+    }
+
+
+    private void mysaves(){
+        mySaves = new ArrayList<>();
+        final DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Saves")
+                .child(firebaseUser.getUid());
+
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                    mySaves.add(snapshot.getKey());
+                }
+
+                readSaves();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private void readSaves(){
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Posts");
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                postList_saves.clear();
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                    Post post = snapshot.getValue(Post.class);
+
+                    for(String id : mySaves){
+                        if(post.getPostid().equals(id)){
+                            postList_saves.add(post);
+                        }
+                    }
+                }
+                myFotoAdapter_saves.notifyDataSetChanged();
+                progressBar.setVisibility(View.GONE);
             }
 
             @Override

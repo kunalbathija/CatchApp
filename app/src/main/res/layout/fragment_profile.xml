@@ -150,7 +150,7 @@ tools:context="com.kunal.catchapp.Fragment.ProfileFragment">
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:textSize="20sp"
+                    android:textSize="18sp"
                     android:id="@+id/edit_profile"
                     android:background="@drawable/button_black"/>
 
@@ -226,6 +226,13 @@ tools:context="com.kunal.catchapp.Fragment.ProfileFragment">
             android:layout_below="@id/last_bar"
             android:visibility="gone"
             android:id="@+id/recycler_view_save"/>
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/progress_circular"
+            android:layout_centerInParent="true"
+            />
 
     </LinearLayout>
 

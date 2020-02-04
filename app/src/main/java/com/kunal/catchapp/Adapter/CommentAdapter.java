@@ -1,7 +1,9 @@
 package com.kunal.catchapp.Adapter;
 
+import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -14,6 +16,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -34,14 +38,16 @@ import java.util.List;
 
 public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHolder>{
 
-    public Context mContext;
-    public List<Comment> mComment;
+    private Context mContext;
+    private List<Comment> mComment;
+    private String postid;
 
     private FirebaseUser firebaseUser;
 
-    public CommentAdapter(Context mContext, List<Comment> mComment) {
+    public CommentAdapter(Context mContext, List<Comment> mComment, String postid) {
         this.mContext = mContext;
         this.mComment = mComment;
+        this.postid = postid;
     }
 
     @NonNull
@@ -76,6 +82,42 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
                 Intent intent = new Intent(mContext, MainActivity.class);
                 intent.putExtra("publisherid",comment.getPublisher());
                 mContext.startActivity(intent);
+            }
+        });
+
+        viewHolder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if(comment.getPublisher().equals(firebaseUser.getUid())){
+                    AlertDialog alertDialog = new AlertDialog.Builder(mContext).create();
+                    alertDialog.setTitle("Karna hai kya delete?");
+                    alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Nahi",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            });
+                    alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Haa",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    FirebaseDatabase.getInstance().getReference("Comments")
+                                            .child(postid).child(comment.getCommentid())
+                                            .removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<Void> task) {
+                                            if(task.isSuccessful()){
+                                                Toast.makeText(mContext, "Ho gaya delete, khush?", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    });
+                                    dialog.dismiss();
+                                }
+                            });
+                    alertDialog.show();
+                }
+                return true;
             }
         });
 
